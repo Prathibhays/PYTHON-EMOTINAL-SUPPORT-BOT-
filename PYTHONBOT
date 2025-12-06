@@ -1,0 +1,193 @@
+#title : A SMALL PYTHON EMOTIONAL SUPPORT BOT 
+import random
+import re
+
+# ---- Conversation State ----
+conversation_state = {
+    "user_name": None,
+    "last_mood": None,
+    "last_topic": None
+}
+
+# ---- Mood Keywords ----
+mood_keywords = {
+    "sad": ["sad", "unhappy", "down", "cry", "crying", "depressed", "upset", "hurt"],
+    "anxious": ["anxious", "anxiety", "stressed", "worried", "panic", "nervous", "overthinking"],
+    "angry": ["angry", "mad", "annoyed", "frustrated", "irritated"],
+    "lonely": ["lonely", "alone", "isolated"],
+    "overwhelmed": ["overwhelmed", "too much", "overloaded", "mentally tired", "burnt out", "burned out"],
+    "confused": ["confused", "uncertain", "unsure", "don't know", "not sure", "mixed feelings"],
+    "hopeless": ["hopeless", "give up", "pointless", "no hope", "tired of trying", "don't care"],
+    "health": ["fever", "cold", "periods", "stomach pain", "headache", "unwell", "sick", "tired"]
+}
+
+# ---- Topic Keywords ----
+topic_keywords = {
+    "exams": ["exam", "exams", "test", "study", "studying"],
+    "school": ["school", "college", "class", "teacher", "assignment"],
+    "family": ["family", "parents", "mom", "dad", "sister", "brother"],
+    "friends": ["friend", "friends", "bestie", "group"],
+    "future": ["future", "career", "job"],
+    "healthy": ["fever", "cold", "unwell", "tired", "sick"]
+}
+
+# ---- Concern Keywords ----
+concern_keywords = {
+    "time pressure": ["run out of time", "finish", "slow", "not finish"],
+    "memory": ["forget", "remember", "recall"],
+    "low marks": ["fail", "low marks", "score", "failure"]
+}
+
+# ---- Greetings / Goodbye ----
+greeting_keywords = ["hi", "hello", "hey", "hii", "heyy"]
+goodbye_keywords = ["bye", "quit", "exit"]
+
+# ---- Keyword Detection ----
+def detect(user_input, mapping):
+    for key, words in mapping.items():
+        for w in words:
+            if re.search(rf"\b{re.escape(w)}\b", user_input):
+                return key
+    return None
+
+def detect_concern(user_input):
+    for key, words in concern_keywords.items():
+        for w in words:
+            if w in user_input:
+                return key
+    return None
+
+
+# ---- WARM LONG MOOD-ONLY ADVICE ----
+warm_mood_advice = {
+    "sad": (
+        "I'm really sorry that you're feeling sad. Your feelings matter, and you don’t have to hide them. "
+        "Doing something gentle like listening to calm music or resting for a bit might help a little. "
+        "Would you like to share what made you feel this way?"
+    ),
+    "anxious": (
+        "Anxiety can feel really heavy, and I'm sorry you're dealing with that. "
+        "Slow, deep breathing or writing down your worries can sometimes bring even a small sense of relief. "
+        "What’s been making you feel anxious lately?"
+    ),
+    "angry": (
+        "It's okay to feel angry — it means something bothered you deeply. "
+        "Taking a pause, stepping away, or venting safely can help you calm down. "
+        "Do you want to talk about what made you feel this way?"
+    ),
+    "lonely": (
+        "Feeling lonely can hurt a lot. You deserve connection, care, and people who make you feel valued. "
+        "Sometimes reaching out to one person or even doing a comforting activity can help a little. "
+        "What’s been making you feel lonely?"
+    ),
+    "overwhelmed": (
+        "Feeling overwhelmed means you’ve been trying to handle a lot, and that's truly exhausting. "
+        "You don’t need to finish everything right now — taking one tiny step is enough. "
+        "What feels the heaviest for you at the moment?"
+    ),
+    "confused": (
+        "It's completely okay to feel confused. Life and emotions don’t always make sense right away. "
+        "Taking a moment to breathe and think gently might help. "
+        "What part feels unclear to you?"
+    ),
+    "hopeless": (
+        "I'm really sorry you're feeling hopeless. That's such a heavy emotion to carry. "
+        "Even if it doesn’t feel like it right now, things can slowly improve with time and support. "
+        "If you want to talk about it, I'm here to listen."
+    ),
+    "health": (
+        "I'm sorry you're not feeling well. I am not a medical professional, but your health matters. "
+        "Please rest, hydrate, and consider talking to a doctor or trusted adult."
+    )
+}
+
+# ---- WARM TOPIC-ONLY ADVICE ----
+warm_topic_advice = {
+    "exams": (
+        "Feeling overwhelmed about exams is completely normal. "
+        "Try breaking your study material into small, manageable parts so it feels less stressful."
+    ),
+    "school": (
+        "School can feel stressful when expectations pile up. "
+        "Try doing one task at a time and don’t be afraid to ask for help when needed."
+    ),
+    "family": (
+        "Family stress can be really draining emotionally. "
+        "It's okay to protect your peace, set small boundaries, and talk to someone you trust."
+    ),
+    "friends": (
+        "Friendships can be confusing and emotional sometimes. "
+        "You deserve people who respect you, listen to you, and make you feel understood. "
+        "Give things a little time, and be kind to yourself while you figure it out."
+    ),
+    "future": (
+        "The future can feel scary and uncertain. You don’t need to have everything figured out right now — "
+        "taking small steps today is more than enough."
+    ),
+    "healthy": (
+        "I'm sorry that you're unwell. I'm not a medical professional, but please rest and take care of yourself."
+    )
+}
+
+
+# ---- Main Response ----
+def get_response(user_input, state):
+    user_input_lower = user_input.lower()
+
+    # Goodbye
+    if any(w in user_input_lower for w in goodbye_keywords):
+        return "Thank you for opening up to me today. Please take care of yourself. 🤍"
+
+    # Greeting
+    if any(w in user_input_lower for w in greeting_keywords):
+        return "Hi! I'm here for you. How are you feeling today?"
+
+    # Name detection
+    name_match = re.search(r"my name is (\w+)", user_input_lower)
+    if name_match:
+        state["user_name"] = name_match.group(1).capitalize()
+        return f"It's really nice to meet you, {state['user_name']}. How are you feeling today?"
+
+    # Detect mood, topic, concern
+    mood = detect(user_input_lower, mood_keywords)
+    topic = detect(user_input_lower, topic_keywords)
+    concern = detect_concern(user_input_lower)
+
+    if mood: state["last_mood"] = mood
+    if topic: state["last_topic"] = topic
+
+
+    # Mood + Topic + Concern
+    if mood and topic and concern:
+        return f"It's understandable to feel {mood} about {topic}, especially because of {concern}. You're not alone — try taking it one step at a time."
+
+    # Mood-only
+    if mood:
+        return warm_mood_advice[mood]
+
+    # Topic-only
+    if topic:
+        return warm_topic_advice[topic]
+
+    # Default fallback
+    return "sorry , I didn't understand .Can you rephrase ?"
+
+
+# ---- Chat Loop ----
+def chatbot_loop():
+    print("-------------------------------------------------------")
+    print("🤖 Bot: Hi! I'm here to listen. How are you feeling?")
+    print("-------------------------------------------------------")
+
+    while True:
+        user_input = input("You: ")
+
+        if user_input.lower() in ["bye", "exit", "quit"]:
+            print("🤖 Bot: Take care of yourself. 🤍")
+            break
+
+        print("🤖 Bot:", get_response(user_input, conversation_state))
+
+
+if __name__ == "__main__":
+    chatbot_loop()
