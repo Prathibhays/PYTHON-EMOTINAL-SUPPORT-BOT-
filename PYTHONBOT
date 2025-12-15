@@ -1,5 +1,4 @@
 #title : A SMALL PYTHON EMOTIONAL SUPPORT BOT 
-import random
 import re
 
 # ---- Conversation State ----
